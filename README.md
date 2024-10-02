@@ -108,9 +108,7 @@ Neon API Assistant is a FastAPI application that serves as an AI-powered assista
 
 2. **Add the Deploy to Koyeb Button**: Add the following Markdown snippet to your repository's README file to enable one-click deployment to Koyeb:
 
-    ```markdown
-    [![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=git&builder=buildpack&repository=github.com/raoufchebri/neon_agent&branch=main&name=neon-api-assistant)
-    ```
+[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=git&builder=buildpack&repository=github.com/raoufchebri/neon_agent&branch=main&name=neon-api-assistant)
 
 3. **Configure Environment Variables**: In the Koyeb dashboard, set the following environment variables for your service:
     - `OPENAI_API_KEY`
