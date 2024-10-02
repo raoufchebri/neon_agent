@@ -38,8 +38,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from openai import OpenAI
 
-from tools import tools
-from neon_api_utils import execute_api_call
+from utils.tools import tools
+from utils.neon_api import execute_api_call
 
 app = FastAPI()
 
@@ -130,9 +130,19 @@ def chat(user_query: str, neon_api_key: str) -> Dict[str, Any]:
             function_args = json.loads(tool_call.function.arguments)
             result = execute_api_call(function_name, neon_api_key=neon_api_key, **function_args)
             response_content = f"Executed {function_name} with result: {result}"
-            response_dict = {"response": response_content, "action_result": result}
+            
+            # Generate a natural language response using GPT-4
+            natural_language_response = client.chat.completions.create(
+                model=CHAT_MODEL,
+                messages=[
+                    {"role": "system", "content": "Provide a natural language response summarizing the result in a user-friendly manner. Only provide the necessary information. Do not display the entire result unless specifically asked. Example: 'The project was created successfully.'"},
+                    {"role": "user", "content": f"User query: {user_query}, Function call: {response_content}"}
+                ]
+            ).choices[0].message.content
+            
+            response_dict = {"response": natural_language_response, "action_result": result}
         else:
-            response_dict = {"response": response_content}
+            response_dict = {"response": response_content or "No specific content provided."}
         
         # Log the response content
         logger.info(f"Response content: {response_content}")

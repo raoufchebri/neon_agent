@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
 from main import app  # Replace 'main' with the actual module name if different
-import neon_api_utils
+import utils.neon_api as neon_api
 
 # Load environment variables from .env file
 load_dotenv()
