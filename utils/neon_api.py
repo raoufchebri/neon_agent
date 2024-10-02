@@ -225,8 +225,6 @@ def get_connection_uri(neon_api_key, project_id: str, database_name: str = "neon
 
     try:
         response = requests.get(url, headers=headers, params=params)
-        print(f"Response status code: {response.status_code}")
-        print(f"Response content: {response.content}")
         return handle_response(response)
     except Exception as e:
         print(f"An error occurred: {str(e)}")
