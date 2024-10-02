@@ -1,3 +1,4 @@
+import os
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, Tuple
 import json
@@ -13,7 +14,7 @@ from db import ChatDB
 logger = logging.getLogger(__name__)
 
 # Initialize ChatDB
-chat_db = ChatDB()
+chat_db = ChatDB(db_url=os.getenv('DATABASE_URL'))
 
 class ChatRequest(BaseModel):
     query: str
@@ -29,6 +30,8 @@ class NewChatResponse(BaseModel):
 
 def prepare_messages(query: str, chat_id: str) -> list:
     messages = chat_db.get_chat_history(chat_id)
+    # Filter out messages with empty role and content
+    messages = [msg for msg in messages if msg.get('role') and msg.get('content')]
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
         *messages,
@@ -48,7 +51,7 @@ def process_assistant_content(content: str, neon_api_key: str, chat_id: str) -> 
             function_name = parts[0].replace("Function call: ", "")
             function_args = json.loads(parts[1])
             function_args['neon_api_key'] = neon_api_key
-            return type('ToolCall', (), {'function': type('Function', (), {'name': function_name, 'arguments': json.dumps(function_args)})})()
+            return type('ToolCall', (), {'function': type('Function', (), {'name': function_name, 'arguments': json.dumps(function_args)})})()()
     chat_db.update_chat_history(chat_id, "assistant", content)
     return None
 
