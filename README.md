@@ -18,34 +18,20 @@ Neon API Assistant is a FastAPI application that serves as an AI-powered assista
 - **OpenAI**: For natural language processing using GPT-4.
 - **Custom Modules**: `tools.py` and `neon_api_utils.py` for Neon API integration.
 
-## Usage
+## Local Usage
 
-Run the `main.py` file to start the FastAPI server. Send POST requests to the `/chat` endpoint with a JSON body containing `query` and `neon_api_key` fields to interact with the assistant.
+### Prerequisites
 
-### Example Request
-json
-{
-"query": "Create a new project named 'MyProject'",
-"neon_api_key": "your_neon_api_key"
-}
+- Python 3.7+
+- PostgreSQL database
+- OpenAI API key
+- Neon API key
 
-### Example Response
-json
-{
-"response": "Executed create_project with result: { ... }",
-"action_result": { ... }
-}
-
-```
-## Environment Variables
-
-- `OPENAI_API_KEY`: Your OpenAI API key for authentication.
-
-## Installation
+### Installation
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/neon_agent.git
+    git clone https://github.com/raoufchebri/neon_agent.git
     cd neon_agent
     ```
 
@@ -60,9 +46,11 @@ json
     pip install -r requirements.txt
     ```
 
-4. Set up your environment variables:
-    ```sh
-    export OPENAI_API_KEY=your_openai_api_key
+4. Set up your environment variables in a `.env` file:
+    ```env
+    OPENAI_API_KEY=your_openai_api_key
+    NEON_API_KEY=your_neon_api_key
+    DATABASE_URL=your_database_url
     ```
 
 5. Run the FastAPI server:
@@ -70,7 +58,78 @@ json
     uvicorn main:app --reload
     ```
 
+### Example Usage
+
+1. **Create a New Chat Session**
+
+   Send a POST request to the `/chat/new` endpoint to create a new chat session and get a unique `chat_id`.
+
+   ```sh
+   curl -X POST "http://127.0.0.1:8000/chat/new"
+   ```
+
+   Example Response:
+   ```json
+   {
+       "chat_id": "your_generated_chat_id"
+   }
+   ```
+
+2. **Interact with the Assistant**
+
+   Send a POST request to the `/chat` endpoint with a JSON body containing `query`, `neon_api_key`, and `chat_id` fields to interact with the assistant.
+
+   ```sh
+   curl -X POST "http://127.0.0.1:8000/chat" -H "Content-Type: application/json" -d '{
+       "query": "Create a new project named 'MyProject'",
+       "neon_api_key": "your_neon_api_key",
+       "chat_id": "your_generated_chat_id"
+   }'
+   ```
+
+   Example Response:
+   ```json
+   {
+       "response": "Executed create_project with result: { ... }",
+       "action_result": { ... }
+   }
+   ```
+
+## Deploying on Koyeb
+
+### Prerequisites
+
+- Koyeb account
+- GitHub repository for your project
+
+### Steps
+
+1. **Fork the Repository**: Fork this repository to your GitHub account.
+
+2. **Add the Deploy to Koyeb Button**: Add the following Markdown snippet to your repository's README file to enable one-click deployment to Koyeb:
+
+    ```markdown
+    [![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=git&builder=buildpack&repository=github.com/raoufchebri/neon_agent&branch=main&name=neon-api-assistant)
+    ```
+
+3. **Configure Environment Variables**: In the Koyeb dashboard, set the following environment variables for your service:
+    - `OPENAI_API_KEY`
+    - `NEON_API_KEY`
+    - `DATABASE_URL`
+
+4. **Deploy the Application**: Click the "Deploy to Koyeb" button in your repository's README file. This will take you to the Koyeb deployment page where you can configure and deploy your application.
+
+5. **Monitor Deployment**: Follow the deployment progress in the Koyeb dashboard. Once deployed, your application will be accessible via the provided URL.
+
 ## API Endpoints
+
+### POST /chat/new
+
+Create a new chat session and return a unique chat ID.
+
+#### Response
+
+- `chat_id` (string): The unique chat ID for the new session.
 
 ### POST /chat
 
@@ -80,6 +139,7 @@ Process a chat request and return a response.
 
 - `query` (string): The user's query.
 - `neon_api_key` (string): The Neon API key for authentication.
+- `chat_id` (string): The unique chat ID for maintaining conversation context.
 
 #### Response
 
@@ -96,4 +156,4 @@ This project is licensed under the MIT License.
 
 ## Version
 
-1.0.0
+0.1.0
