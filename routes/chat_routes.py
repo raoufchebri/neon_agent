@@ -2,7 +2,8 @@ import os
 from typing import Dict, List
 from fastapi import APIRouter, Depends, HTTPException, Header, Path, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from services.chat_service import chat, create_new_chat_session, ChatResponse, ChatRequest, NewChatResponse
+from services.chat_service import chat, create_new_chat_session
+from models import ChatRequest, ChatResponse, NewChatResponse
 import logging
 from db import ChatDB
 from models import ChatInfo
