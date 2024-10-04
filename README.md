@@ -1,8 +1,8 @@
-# Neon API Assistant
+# Postgres AI Agent
 
 ## Overview
 
-Neon API Assistant is a FastAPI application that serves as an AI-powered assistant for interacting with the Neon API. It leverages OpenAI's GPT-4 model to interpret user queries and execute corresponding Neon API calls.
+Postgres Agent is a Neon API-based assistant designed to deploy and query Postgres databases. It leverages OpenAI's GPT-4 model to interpret user queries and execute corresponding Neon API calls.
 
 ## Key Features
 
