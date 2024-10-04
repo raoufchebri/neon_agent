@@ -204,6 +204,28 @@ tools = [
                 "additionalProperties": False,
             },
         }
-    }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "execute_sql_query",
+            "description": "Executes a SQL query on a Neon database.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "sql_query": {
+                        "type": "string",
+                        "description": "The SQL query to execute.",
+                    },
+                    "database_url": {   
+                        "type": "string",
+                        "description": "The database URL.",
+                    },
+                },
+                "required": ["sql_query", "database_url"],
+                "additionalProperties": False,
+            },
+        }
+    },
     
 ]

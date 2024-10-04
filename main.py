@@ -32,7 +32,19 @@ Version: 1.0.0
 import logging
 from fastapi import FastAPI
 from config import app
-from routes import chat_router  # Importing chat_router from routes
+from routes import chat_router  #
+
+from fastapi.middleware.cors import CORSMiddleware
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
