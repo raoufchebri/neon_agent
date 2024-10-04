@@ -1,15 +1,22 @@
+import json
 import os
 from pydantic import BaseModel
-from typing import Dict, Any, Optional, Tuple
-import json
+from typing import Dict, Any
 import logging
 import uuid
-import decimal
 
 from utils.tools import tools
-from services.neon_service import execute_api_call, get_current_user_info
-from config import client, SYSTEM_PROMPT, CHAT_MODEL, FUNCTION_CALL_MODEL
+from services.neon_service import get_current_user_info
+from config import client
 from db import ChatDB
+from utils.chat_utils import (
+    generate_natural_language_response,
+    convert_decimal_to_float,
+    handle_tool_call,
+    prepare_chat_history,
+    get_assistant_response,
+    extract_tool_call
+)
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -17,87 +24,61 @@ logger = logging.getLogger(__name__)
 # Initialize ChatDB
 chat_db = ChatDB(db_url=os.getenv('DATABASE_URL'))
 
-class ChatRequest(BaseModel):
-    query: str
-
-class ChatResponse(BaseModel):
-    response: str
-    action_result: Optional[Dict[str, Any]] = None
-
-class NewChatResponse(BaseModel):
-    chat_id: str
-
-def generate_natural_language_response(user_query: str, response_content: str) -> str:
-    return client.chat.completions.create(
-        model=CHAT_MODEL,
-        messages=[
-            {"role": "system", "content": "Provide a natural language response summarizing the result in a user-friendly manner. Only provide the necessary information. Do not display the entire result unless specifically asked. Example: 'The project was created successfully.'"},
-            {"role": "user", "content": f"User query: {user_query}, Function call: {response_content}"}
-        ]
-    ).choices[0].message.content
-
-def convert_decimal_to_float(obj):
-    if isinstance(obj, decimal.Decimal):
-        return float(obj)
-    raise TypeError
-
 def chat(user_query: str, neon_api_key: str, chat_id: str) -> Dict[str, Any]:
     try:
-        # Get chat history
-        messages = chat_db.get_all_chat_history(chat_id)
-        messages = [msg for msg in messages if msg.get('role') and msg.get('content')]
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            *messages,
-            {"role": "user", "content": f"User query: {user_query}"}
-        ]
+        # Retrieve and prepare chat history
+        messages = prepare_chat_history(chat_db, chat_id, user_query)
 
-        # Process the user query
-        response = client.chat.completions.create(model=FUNCTION_CALL_MODEL, messages=messages, tools=tools)
-        assistant_message = response.choices[0].message
+        # Process the user query and get the assistant's response
+        assistant_message = get_assistant_response(client, messages, tools)
 
-        chat_db.update_chat_history(chat_id, "user", user_query, is_function_call=False)
-        
-        # Extract tool call from assistant message
-        tool_call = None
+        # Collect chat history entries
+        chat_entries = []
 
-        if assistant_message.tool_calls:
-            logger.info(f"assistant_message: {assistant_message.tool_calls}")
-            tool_call = assistant_message.tool_calls[0]
-        elif assistant_message.content:
-            if assistant_message.content.startswith("Function call:"):
-                parts = assistant_message.content.split(", Arguments: ")
-                if len(parts) == 2:
-                    function_name = parts[0].replace("Function call: ", "")
-                    function_args = json.loads(parts[1])
-                    function_args['neon_api_key'] = neon_api_key
-                    tool_call = type('ToolCall', (), {'function': type('Function', (), {'name': function_name, 'arguments': json.dumps(function_args)})})()()
-        
+        # Add user's query to chat entries
+        chat_entries.append({
+            "role": "user",
+            "content": user_query,
+            "is_function_call": False
+        })
+
+        # Determine if a tool call is needed
+        tool_call = extract_tool_call(assistant_message, neon_api_key)
+
+        # Prepare the response dictionary
         response_dict = {}
 
         # Execute tool call if it exists
         if tool_call:
-            function_name = tool_call.function.name
-            function_args = json.loads(tool_call.function.arguments)
-            # Pass messages to execute_api_call
-            result = execute_api_call(function_name, neon_api_key=neon_api_key, messages=messages, **function_args)
-            response_content = f"Executed {function_name} with result: {result}"
-            
-            natural_language_response = generate_natural_language_response(user_query, response_content)
-            response_dict["response"] = natural_language_response
-            
-            chat_db.update_chat_history(chat_id, "assistant", f"Action result: {json.dumps(result, default=convert_decimal_to_float)}", True)
+            response_dict["response"], function_call_result = handle_tool_call(tool_call, neon_api_key, messages, user_query)
+            chat_entries.append({
+                "role": "assistant",
+                "content": f"Action result: {json.dumps(function_call_result, default=convert_decimal_to_float)}",
+                "is_function_call": True
+            })
         else:
             response_dict["response"] = assistant_message.content or "No specific content provided."
-        
-        chat_db.update_chat_history(chat_id, "assistant", response_dict["response"], False)
-        
-        return response_dict
+
+        # Add assistant's response to chat entries
+        chat_entries.append({
+            "role": "assistant",
+            "content": response_dict["response"],
+            "is_function_call": False
+        })
+
+        # Update chat history with all entries
+
     except Exception as e:
         logger.error(f"Error processing chat: {e}", exc_info=True)
         error_message = f"An error occurred: {str(e)}"
         response_dict["response"] = generate_natural_language_response(user_query, error_message)
+        chat_entries.append({
+            "role": "assistant",
+            "content": response_dict["response"],
+            "is_function_call": False
+        })
     finally:
+        chat_db.update_chat_history(chat_id, chat_entries)
         return response_dict
 
 def create_new_chat_session(neon_api_key: str) -> str:

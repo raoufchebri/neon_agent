@@ -1,3 +1,3 @@
-from .chat_models import ChatInfo
+from .chat_models import ChatInfo, ChatRequest, ChatResponse, NewChatResponse
 
-__all__ = ['ChatInfo']
+__all__ = ['ChatInfo', 'ChatRequest', 'ChatResponse', 'NewChatResponse']

@@ -85,12 +85,16 @@ class ChatDB:
             return [{"role": row[0], "content": row[1]} for row in result]
 
     @reconnect
-    def update_chat_history(self, chat_id: str, role: str, content: str, is_function_call: bool) -> None:
+    def update_chat_history(self, chat_id: str, entries: list) -> None:
         with self.conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO chat_history (chat_id, role, content, is_function_call)
-                VALUES (%s, %s, %s, %s)
-            """, (chat_id, role, content, is_function_call))
+            for entry in entries:
+                role = entry.get('role')
+                content = entry.get('content')
+                is_function_call = entry.get('is_function_call', False)
+                cur.execute("""
+                    INSERT INTO chat_history (chat_id, role, content, is_function_call)
+                    VALUES (%s, %s, %s, %s)
+                """, (chat_id, role, content, is_function_call))
             self.conn.commit()
 
     @reconnect

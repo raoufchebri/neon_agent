@@ -46,14 +46,19 @@ Neon API Assistant is a FastAPI application that serves as an AI-powered assista
     pip install -r requirements.txt
     ```
 
-4. Set up your environment variables in a `.env` file:
+4. Copy the `.env.example` file to a new `.env` file:
+    ```sh
+    cp .env.example .env
+    ```
+
+5. Set up your environment variables in the `.env` file:
     ```env
     OPENAI_API_KEY=your_openai_api_key
     NEON_API_KEY=your_neon_api_key
     DATABASE_URL=your_database_url
     ```
 
-5. Run the FastAPI server:
+6. Run the FastAPI server:
     ```sh
     uvicorn main:app --reload
     ```
